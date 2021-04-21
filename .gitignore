@@ -128,5 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Data
+# Data, Models, Artifacts and Experiment Tracking
 data/
+mlruns/
+models/
+catboost_info/
