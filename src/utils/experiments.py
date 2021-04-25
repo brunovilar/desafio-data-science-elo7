@@ -27,13 +27,13 @@ def extract_tokens(frame: pd.DataFrame, raw_column_name: str, split_pattern: re.
     return tags
 
 
-def compute_multiclass_classification_metrics(y_train: np.array, y_preds: np.array) -> dict:
+def compute_multiclass_classification_metrics(y_train: np.array, y_preds: np.array, average=None) -> dict:
 
     return {
         'acc': metrics.accuracy_score(y_train, y_preds),
-        'precision': metrics.precision_score(y_train, y_preds, average=None),
-        'recall': metrics.recall_score(y_train, y_preds, average=None),
-        'f1': metrics.f1_score(y_train, y_preds, average=None),
+        'precision': metrics.precision_score(y_train, y_preds, average=average),
+        'recall': metrics.recall_score(y_train, y_preds, average=average),
+        'f1': metrics.f1_score(y_train, y_preds, average=average),
     }
 
 
