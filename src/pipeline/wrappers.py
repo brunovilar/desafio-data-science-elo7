@@ -40,6 +40,6 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
                                       self.numeric_columns_to_impute,
                                       self.text_columns_to_encode,
                                       self.similarity_features,
-                                      self.partial_clean_text_fn)
+                                      self.partial_clean_fn)
 
         return self.matrix_creation_fn(features, self.basic_features, self.embeddings_features)
