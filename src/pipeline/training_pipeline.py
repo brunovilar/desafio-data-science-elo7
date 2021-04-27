@@ -92,7 +92,7 @@ def fill_missing_numeric_values(base_frame: pd.DataFrame, numeric_stats_dict: di
 
     filled_frame = base_frame.copy()
     for column in numeric_stats_dict.keys():
-        filled_frame[column] = filled_frame[column].apply(lambda v: numeric_stats_dict['weight'][statistics])
+        filled_frame[column] = filled_frame[column].apply(lambda v: numeric_stats_dict[column][statistics])
 
     return filled_frame
 
