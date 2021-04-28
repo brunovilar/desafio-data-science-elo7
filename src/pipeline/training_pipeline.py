@@ -14,7 +14,6 @@ def compute_embeddings_frame(base_frame: pd.DataFrame, columns: List[str],
     """Para cada coluna indicada, cria uma coluna com a representação de embeddings de cada elemento."""
 
     ft_model = fasttext.load_model(os.path.join(settings.MODELS_PATH, ft_model_ref))
-
     embeddings_frame = pd.DataFrame()
     for column in columns:
         embeddings_frame[f'{column}_embedding'] = (
