@@ -12,21 +12,23 @@ from src.pipeline.inference_pipeline import make_batch_predictions
 
 
 def classify_product(product: str) -> None:
-    print(f'Classify Product: {product}')
     product_obj = Product(**json.loads(product))
     product_obj = fp.first(make_batch_predictions([product_obj]))
     print(product_obj.category)
 
 
 def classify_query(query: str) -> None:
-    print(f'Classify Query: {query}')
+    print(f'TBD: Classify Query: {query}')
 
 
 def recommend(query: str) -> None:
-    print(f'Recommend for Query: {query}')
+    print(f'TBD: Recommend for Query: {query}')
 
 
 def main():
+    print(__file__)
+    print(os.path.expanduser(__file__))
+    print(SCRIPT_DIR)
 
     task_function_map = {
         "classify": classify_product,
