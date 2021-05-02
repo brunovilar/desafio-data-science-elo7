@@ -4,8 +4,6 @@ import pandas as pd
 from sklearn import metrics
 from typing import List, Dict, Set, Any, Tuple
 
-TAG_SPLIT_PATTERN = re.compile(r"(\s|[-/,;.()])")
-
 
 def set_dataset_split(frame: pd.DataFrame, cut_off_period: str) -> pd.DataFrame:
     split_frame = (
