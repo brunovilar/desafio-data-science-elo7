@@ -2,6 +2,7 @@ import os
 from typing import List, Tuple, Any
 from functools import lru_cache
 
+import numpy as np
 import pandas as pd
 import mlflow
 from mlflow.pyfunc import PyFuncModel
@@ -10,6 +11,10 @@ from mlflow.tracking import MlflowClient
 from sklearn.preprocessing import LabelEncoder
 from ..entities import Product
 from .. import settings
+from ..pipeline.training_pipeline import (compute_embeddings_frame,
+                                          create_feature_matrix,
+                                          get_qualified_queries,
+                                          compute_frame_column_entropy)
 
 
 @lru_cache(maxsize=10)
@@ -54,3 +59,52 @@ def make_batch_predictions(products: List[Product]) -> List[Product]:
     # Cast products from DataFrame records to dicts and then dataclass again
     return [Product(**item)
             for item in products_frame.to_dict(orient='records')]
+
+
+def predict_product_cluster(base_frame: pd.DataFrame, embedding_columns: List[str], clustering_model: Any) -> np.array:
+    embeddings_columns_names = [f'{item}_embedding' for item in embedding_columns]
+    embeddings_frame = pd.concat([base_frame, compute_embeddings_frame(base_frame, embedding_columns)], axis=1)
+
+    # Create features array based on embeddings
+    X_clustering = create_feature_matrix(embeddings_frame,
+                                         feature_columns=[],
+                                         embeddings_columns=embeddings_columns_names)
+
+    # Define the cluster of each qualified record
+    return clustering_model.predict(X_clustering)
+
+
+def make_unsupervised_intent_classification(base_frame: pd.DataFrame,
+                                            embedding_columns: List[str],
+                                            minimum_number_of_products: int,
+                                            entropy_threshold: float,
+                                            clustering_model: Any
+                                            ) -> np.array:
+    """Define the query intention based on the entropy analysis of the products with interactions withing the results
+
+       Output:
+            -1: Undefined: The query does not have the minimum number of products with interactions
+            0: Exploration -- The query was created to see a wide range of product types
+            1: Focus -- The query was created to find a specific product
+    """
+
+    # Assign a cluster for each record
+    internal_frame = base_frame.copy()
+    internal_frame['cluster'] = predict_product_cluster(internal_frame, embedding_columns, clustering_model)
+
+    # Select qualified queries based on the products with interactions
+    qualified_queries = get_qualified_queries(internal_frame, minimum_number_of_products)
+
+    frame_slice = internal_frame.loc[lambda f: f['query'].isin(qualified_queries)]
+
+    internal_frame = (internal_frame
+                      .set_index('query')
+                      .merge(compute_frame_column_entropy(frame_slice, 'query', 'cluster').rename('entropy'),
+                             left_index=True, right_index=True, how='left')
+                      .fillna({'entropy': -1})
+                      .reset_index()
+                      )
+
+    return (internal_frame['entropy']
+            .apply(lambda e: -1 if e < 0 else int(e <= entropy_threshold))
+            )

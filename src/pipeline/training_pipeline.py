@@ -5,8 +5,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from scipy.special import softmax
 import fasttext
 from functools import partial
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Set
 from .. import settings
+from ..utils.experiments import compute_entropy
 
 
 def compute_embeddings_frame(base_frame: pd.DataFrame, columns: List[str],
@@ -18,11 +19,11 @@ def compute_embeddings_frame(base_frame: pd.DataFrame, columns: List[str],
     for column in columns:
         embeddings_frame[f'{column}_embedding'] = (
             base_frame
-                .assign(**{f'{column}': lambda f: f[column].apply(lambda v: '' if pd.isna(v) else v)})
+            .assign(**{f'{column}': lambda f: f[column].apply(lambda v: '' if pd.isna(v) else v)})
             [column]
-                .str
-                .lower()
-                .apply(ft_model.get_sentence_vector)
+            .str
+            .lower()
+            .apply(ft_model.get_sentence_vector)
         )
     return embeddings_frame
 
@@ -177,3 +178,33 @@ def preprocess_features(base_frame: pd.DataFrame,
     features_frame = fill_missing_numeric_values(features_frame, numeric_stats)
 
     return features_frame
+
+
+def count_frame_items(base_frame: pd.DataFrame, group_column: str, count_column: str) -> pd.Series:
+    return (base_frame
+            [[group_column, count_column]]
+            .drop_duplicates()
+            .assign(records=1)
+            .groupby(group_column)
+            .sum()
+            ['records'])
+
+
+def compute_frame_column_entropy(base_frame: pd.DataFrame, group_column: str, count_column: str) -> pd.Series:
+    return (base_frame
+            [[group_column, count_column]]
+            .groupby(group_column)
+            .apply(lambda f: compute_entropy(f[count_column].to_numpy())))
+
+
+def get_qualified_queries(base_frame: pd.DataFrame, minimum_number_of_products: int) -> Set[str]:
+    return set(base_frame
+               [['query']]
+               .assign(products=1)
+               .groupby('query')
+               .sum()
+               .reset_index()
+               .loc[lambda f: f['products'] >= minimum_number_of_products]
+               ['query']
+               .unique()
+               .tolist())
