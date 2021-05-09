@@ -1,4 +1,6 @@
 import mlflow.pyfunc
+from typing import List, Dict, Set, Any, Tuple
+from ..pipeline.inference_pipeline import make_unsupervised_intent_classification
 
 
 class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
@@ -43,3 +45,28 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
                                       self.partial_clean_fn)
 
         return self.matrix_creation_fn(features, self.basic_features, self.embeddings_features)
+
+
+class UnsupervisedIntentClassificationWrapper(mlflow.pyfunc.PythonModel):
+    """Classe que atua como um pacote para manter referências utilizadas para pré-processar dados de treinamento"""
+
+    def __init__(self,
+                 embedding_columns: List[str],
+                 minimum_number_of_products: int,
+                 entropy_threshold: float,
+                 clustering_model: Any,
+                 ):
+
+        self.embedding_columns = embedding_columns
+        self.minimum_number_of_products = minimum_number_of_products
+        self.entropy_threshold = entropy_threshold
+        self.clustering_model = clustering_model
+
+    def predict(self, context, model_input):
+        _model_input = model_input.copy()
+
+        return make_unsupervised_intent_classification(_model_input,
+                                                       self.embedding_columns,
+                                                       self.minimum_number_of_products,
+                                                       self.entropy_threshold,
+                                                       self.clustering_model)

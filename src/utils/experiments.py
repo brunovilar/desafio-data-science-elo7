@@ -1,7 +1,9 @@
 import re
+from math import log, e
 import numpy as np
 import pandas as pd
 from sklearn import metrics
+from collections import Iterable
 from typing import List, Dict, Set, Any, Tuple
 
 
@@ -46,6 +48,29 @@ def compute_binary_classification_metrics(y_train: np.array, y_preds: np.array) 
         'f1': metrics.f1_score(y_train, y_preds),
         'filtering': sum(y_preds) / len(y_preds)
     }
+
+
+def compute_entropy(labels: List[str], base: float = None):
+    """ Source: https://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python """
+
+    n_labels = len(labels)
+    if n_labels <= 1:
+        return 0
+
+    value, counts = np.unique(labels, return_counts=True)
+    probs = counts / n_labels
+    n_classes = np.count_nonzero(probs)
+
+    if n_classes <= 1:
+        return 0
+
+    ent = 0.
+
+    base = e if base is None else base
+    for i in probs:
+        ent -= i * log(i, base)
+
+    return ent
 
 
 def format_compound_value(value: Any) -> List:
