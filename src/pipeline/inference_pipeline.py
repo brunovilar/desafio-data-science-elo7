@@ -100,7 +100,7 @@ def make_unsupervised_intent_classification(base_frame: pd.DataFrame,
     internal_frame = (internal_frame
                       .set_index('query')
                       .merge(compute_frame_column_entropy(frame_slice, 'query', 'cluster').rename('entropy'),
-                             left_index=True, right_index=True, how='left')
+                             on='query', how='left')
                       .fillna({'entropy': -1})
                       .reset_index()
                       )
