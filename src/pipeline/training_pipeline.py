@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
@@ -8,6 +9,7 @@ from functools import partial
 from typing import List, Tuple, Dict, Set
 from .. import settings
 from ..utils.experiments import compute_entropy
+from ..utils.text import extract_artisanal_text_features
 
 
 def compute_embeddings_frame(base_frame: pd.DataFrame, columns: List[str],
@@ -206,3 +208,33 @@ def get_qualified_queries(base_frame: pd.DataFrame, minimum_number_of_products: 
                ['query']
                .unique()
                .tolist())
+
+
+def preprocess_for_query_intent_classification(base_frame: pd.DataFrame,
+                                               basic_features: List[str],
+                                               artisanal_features: List[str],
+                                               embeddings_features: List[str]
+                                               ) -> pd.DataFrame:
+
+    features_frame = base_frame.copy()
+
+    # Create embeddings for each feature in embeddings_features
+    features_frame = pd.concat([features_frame,
+                                compute_embeddings_frame(features_frame, embeddings_features)], axis=1)
+
+    # Create embeddings_columns with the new columns created with embeddings
+    embeddings_columns = [f'{feature}_embedding' for feature in embeddings_features]
+
+    word_pattern = re.compile(r'\W')
+    for feature in artisanal_features:
+        features_frame = (
+            features_frame
+            .assign(word_level_feature=
+                    lambda f: f[feature].apply(lambda q: extract_artisanal_text_features(q, word_pattern)))
+            .assign(char_level_feature=lambda f: f[feature].apply(extract_artisanal_text_features))
+            .rename(columns={c: f'{feature}_{c}' for c in ['word_level_feature', 'char_level_feature']})
+        )
+        # Extend embeddings columns with artisanal features
+        embeddings_columns.extend([f'{feature}_{c}' for c in ['word_level_feature', 'char_level_feature']])
+
+    return create_feature_matrix(features_frame, basic_features, embeddings_columns=embeddings_columns)

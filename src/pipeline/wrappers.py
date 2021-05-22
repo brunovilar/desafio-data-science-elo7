@@ -1,10 +1,13 @@
+import pandas as pd
 import mlflow.pyfunc
-from typing import List, Dict, Set, Any, Tuple
+from mlflow.pyfunc import PythonModelContext
+from typing import List, Any
 from ..pipeline.inference_pipeline import make_unsupervised_intent_classification
+from ..pipeline.training_pipeline import preprocess_for_query_intent_classification
 
 
 class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
-    """Classe que atua como um pacote para manter referências utilizadas para pré-processar dados de treinamento"""
+    """Wrapper class to keep all references to preprocess data for Category Classification"""
 
     def __init__(self,
                  partial_clean_fn,
@@ -32,7 +35,7 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
         self.basic_features = basic_features
         self.embeddings_features = embeddings_features
 
-    def predict(self, context, model_input):
+    def predict(self, context: PythonModelContext, model_input: pd.DataFrame):
         _model_input = model_input.copy()
 
         features = self.preprocess_fn(_model_input,
@@ -48,7 +51,7 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
 
 
 class UnsupervisedIntentClassificationWrapper(mlflow.pyfunc.PythonModel):
-    """Classe que atua como um pacote para manter referências utilizadas para pré-processar dados de treinamento"""
+    """Wrapper class to keep all references to preprocess data for Unsupervised Intent Classification"""
 
     def __init__(self,
                  embedding_columns: List[str],
@@ -62,7 +65,7 @@ class UnsupervisedIntentClassificationWrapper(mlflow.pyfunc.PythonModel):
         self.entropy_threshold = entropy_threshold
         self.clustering_model = clustering_model
 
-    def predict(self, context, model_input):
+    def predict(self, context: PythonModelContext, model_input: pd.DataFrame):
         _model_input = model_input.copy()
 
         return make_unsupervised_intent_classification(_model_input,
@@ -70,3 +73,24 @@ class UnsupervisedIntentClassificationWrapper(mlflow.pyfunc.PythonModel):
                                                        self.minimum_number_of_products,
                                                        self.entropy_threshold,
                                                        self.clustering_model)
+
+
+class SupervisedIntentClassificationPreprocessingWrapper(mlflow.pyfunc.PythonModel):
+    """Wrapper class to keep all references to preprocess data for Supervised Intent Classification"""
+
+    def __init__(self,
+                 basic_features: List[str] = None,
+                 artisanal_features: List[str] = None,
+                 embeddings_features: List[str] = None
+                 ):
+
+        self.basic_features = basic_features or []
+        self.artisanal_features = artisanal_features or []
+        self.embeddings_features = embeddings_features or []
+
+    def predict(self, context: PythonModelContext, model_input: pd.DataFrame) -> pd.DataFrame:
+
+        return preprocess_for_query_intent_classification(model_input,
+                                                          basic_features=[],
+                                                          artisanal_features=self.artisanal_features,
+                                                          embeddings_features=self.embeddings_features)
