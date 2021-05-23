@@ -8,7 +8,7 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, os.pardir)))
 
 from src.entities import Product
-from src.pipeline.inference_pipeline import make_batch_predictions
+from src.pipeline.inference_pipeline import make_batch_predictions, make_supervised_intent_classification
 
 
 def classify_product(product: str) -> None:
@@ -18,7 +18,8 @@ def classify_product(product: str) -> None:
 
 
 def classify_query(query: str) -> None:
-    print(f'TBD: Classify Query: {query}')
+    query_intent = fp.first(make_supervised_intent_classification([query]))
+    print(query_intent)
 
 
 def recommend(query: str) -> None:

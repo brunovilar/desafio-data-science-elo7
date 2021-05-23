@@ -43,6 +43,7 @@ def compute_binary_classification_metrics(y_train: np.array, y_preds: np.array) 
     return {
         'acc': metrics.accuracy_score(y_train, y_preds),
         'auc': metrics.auc(fpr, tpr),
+        'mc': metrics.matthews_corrcoef(y_train, y_preds),
         'precision': metrics.precision_score(y_train, y_preds),
         'recall': metrics.recall_score(y_train, y_preds),
         'f1': metrics.f1_score(y_train, y_preds),

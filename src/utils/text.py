@@ -37,6 +37,22 @@ def clean_text(text: str, unify_html_tags: bool = True, unify_urls: bool = True,
     return text
 
 
+def extract_artisanal_text_features(text: str, tokenizer: str = None) -> List[int]:
+    if tokenizer:
+        text = re.split(re.compile(tokenizer), text.strip())
+
+    sentence_length = len(text)
+    max_item_length = max(len(c) for c in text)
+    numbers = sum(c.isdigit() for c in text)
+    decimals = sum(c.isdecimal() for c in text)
+    letters = sum(c.isalpha() for c in text)
+    upper_letters = sum(c.isupper() for c in text)
+    alpha_num = sum(c.isalnum() for c in text)
+    spaces = sum(c.isspace() for c in text)
+
+    return [sentence_length, max_item_length, numbers, decimals, letters, upper_letters, alpha_num, spaces]
+
+
 @lru_cache()
 def load_stopwords() -> List[str]:
 

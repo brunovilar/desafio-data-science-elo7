@@ -36,7 +36,7 @@ def load_model_resources(run_id: str) -> Tuple[PyFuncModel, Any, LabelEncoder]:
     # Load the model
     model = mlflow.sklearn.load_model(f'{artifact_uri}/model')
 
-    # Load the label encoder
+    # Load the label encoder if it exists
     parent_path = artifact_uri.replace(model_run.info.run_id, model_run.data.tags.get('mlflow.parentRunId'))
     label_encoder_path = os.path.join(parent_path, 'label_encoder')
     label_encoder_model = mlflow.sklearn.load_model(label_encoder_path)
@@ -100,7 +100,7 @@ def make_unsupervised_intent_classification(base_frame: pd.DataFrame,
     internal_frame = (internal_frame
                       .set_index('query')
                       .merge(compute_frame_column_entropy(frame_slice, 'query', 'cluster').rename('entropy'),
-                             left_index=True, right_index=True, how='left')
+                             on='query', how='left')
                       .fillna({'entropy': -1})
                       .reset_index()
                       )
@@ -108,3 +108,17 @@ def make_unsupervised_intent_classification(base_frame: pd.DataFrame,
     return (internal_frame['entropy']
             .apply(lambda e: -1 if e < 0 else int(e <= entropy_threshold))
             )
+
+
+def make_supervised_intent_classification(queries: List[str]) -> List[str]:
+    # Retrieve the model's reference resources from Mlflow
+    preprocessing, model, label_encoder = load_model_resources(settings.SUPERVISED_INTENT_CLASSIFICATION_RUN_ID)
+    # Load products as a data frame for batch prediction
+    queries_frame = pd.DataFrame({'query': queries})
+    # Preprocess features
+    features = preprocessing.predict(queries_frame)
+    # Make predictions
+    predictions = model.predict(features)
+
+    # Return the intent of each query as a list of strings
+    return label_encoder.inverse_transform(predictions)

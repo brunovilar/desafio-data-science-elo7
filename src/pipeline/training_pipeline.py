@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
@@ -8,11 +9,12 @@ from functools import partial
 from typing import List, Tuple, Dict, Set
 from .. import settings
 from ..utils.experiments import compute_entropy
+from ..utils.text import extract_artisanal_text_features
 
 
 def compute_embeddings_frame(base_frame: pd.DataFrame, columns: List[str],
                              ft_model_ref: str = 'cc.pt.300.bin') -> pd.DataFrame:
-    """Para cada coluna indicada, cria uma coluna com a representação de embeddings de cada elemento."""
+    """For each column, creates an embedding representation of its elements"""
 
     ft_model = fasttext.load_model(os.path.join(settings.MODELS_PATH, ft_model_ref))
     embeddings_frame = pd.DataFrame()
@@ -30,9 +32,7 @@ def compute_embeddings_frame(base_frame: pd.DataFrame, columns: List[str],
 
 def compute_average_embeddings(base_frame: pd.DataFrame, columns: List[str], categories: List[str]) -> \
         Dict[str, np.array]:
-    """Gera um dicionário contendo como chave categorias e como valor a média dos embeddings de todos os elementos
-    do data frame para a categoria.
-    """
+    """Creates a dictionary with category as key and average of elements embeddings as value"""
 
     category_embeddings_dict = {}
     for category in categories:
@@ -51,7 +51,7 @@ def compute_column_category_similarity(base_embeddings_frame: pd.DataFrame,
                                        categories_embeddings: dict,
                                        column: str,
                                        apply_softmax: bool = False) -> pd.DataFrame:
-    """Adiciona, para cada categoria, qual a similaridade entre os elementos dela e os embeddings da coluna indicada"""
+    """Adds, for each category, the similarity between its elements and the columns embeddings"""
 
     similarity_frame = base_embeddings_frame[[]].copy()
     categories = sorted(set([category for category, _ in categories_embeddings.keys()]))
@@ -74,7 +74,7 @@ def compute_column_category_similarity(base_embeddings_frame: pd.DataFrame,
 
 
 def compute_stats_for_numeric_values(base_frame: pd.DataFrame, columns: List[str]) -> Dict[Tuple[str, str], float]:
-    """Gera um dicionário aninhado contendo nome da coluna, estatística e valor"""
+    """Creates a nested dictionary with column name, statistics and value"""
 
     return (base_frame
             [columns]
@@ -88,7 +88,7 @@ def compute_stats_for_numeric_values(base_frame: pd.DataFrame, columns: List[str
 
 def fill_missing_numeric_values(base_frame: pd.DataFrame, numeric_stats_dict: dict,
                                 statistics: str = 'median') -> pd.DataFrame:
-    """Função para preencher valores ausentes com dicionário contendo estatísticas de colunas"""
+    """Fills missing values from columns based on a dictionary with the columns statistics"""
 
     filled_frame = base_frame.copy()
     for column in numeric_stats_dict.keys():
@@ -99,7 +99,7 @@ def fill_missing_numeric_values(base_frame: pd.DataFrame, numeric_stats_dict: di
 
 def create_feature_matrix(base_frame: pd.DataFrame, feature_columns: List[str],
                           embeddings_columns: List[str]) -> np.array:
-    """Função para extrair e formatar features em uma matriz para treinamento/inferência"""
+    """Extracts and formats features as a numeric matrix"""
 
     embeddings_list = []
     for column in embeddings_columns:
@@ -116,12 +116,12 @@ def create_preprocessing_resources(base_frame: pd.DataFrame,
                                    embeddings_columns: List[str],
                                    numeric_columns: List[str],
                                    text_preprocessing_fn: partial) -> (List[str], Dict, Dict):
-    """Função para criar dicionários e listas de referência para processar dados de treinamento e de teste"""
+    """Creates dictionaries and reference lists to preprocess data for training and test"""
 
     categories = sorted(base_frame['category'].unique().tolist())
     columns_to_copy = ['category'] + embeddings_columns + numeric_columns
 
-    # Limpar e gerar embeddings de colunas textuais selecionadas
+    # Creates embeddings for textual columns
     features_frame = (base_frame
                       [columns_to_copy]
                       .copy()
@@ -134,10 +134,10 @@ def create_preprocessing_resources(base_frame: pd.DataFrame,
     embeddings_frame = compute_embeddings_frame(base_frame, embeddings_columns)
     features_frame = pd.concat([features_frame, embeddings_frame], axis=1)
 
-    # Gerar dicionário com os embeddings médios de cada categoria dos dados de treinamento
+    # Creates a dictionary with the average of the category embeddings
     category_embeddings_dict = compute_average_embeddings(features_frame, embeddings_columns, categories)
 
-    # Gerar dicionário com estatísticas de valores numéricos para fazer imputação
+    # Creates a dictionary with statistics from numeric values to impute missing values
     numerics_stats_dict = compute_stats_for_numeric_values(base_frame, numeric_columns)
 
     return categories, category_embeddings_dict, numerics_stats_dict
@@ -152,7 +152,7 @@ def preprocess_features(base_frame: pd.DataFrame,
                         similarity_features: List[str],
                         text_preprocessing_fn: partial
                         ) -> pd.DataFrame:
-    """Função para fazer pre-processamento das features para treinamento, validação e teste"""
+    """Preprocesses features for training, validation and test"""
 
     columns_to_copy = ['category'] + numeric_features + text_features
     features_frame = (base_frame
@@ -164,17 +164,17 @@ def preprocess_features(base_frame: pd.DataFrame,
     for feature in text_features:
         features_frame[feature] = features_frame[feature].apply(text_preprocessing_fn)
 
-    # Calcular embeddings para colunas textuais
+    # Computes embeddings for textual columns
     embeddings_frame = compute_embeddings_frame(features_frame, text_features)
     features_frame = pd.concat([features_frame.drop(columns=text_features), embeddings_frame], axis=1)
 
-    # Adicionar similaridade
+    # Adds similarity features
     for feature in similarity_features:
         category_similarity_frame = compute_column_category_similarity(features_frame, category_embeddings,
                                                                        feature)
         features_frame = pd.concat([features_frame, category_similarity_frame], axis=1)
 
-    # Preencher valores numéricos
+    # Fills missing values
     features_frame = fill_missing_numeric_values(features_frame, numeric_stats)
 
     return features_frame
@@ -208,3 +208,33 @@ def get_qualified_queries(base_frame: pd.DataFrame, minimum_number_of_products: 
                ['query']
                .unique()
                .tolist())
+
+
+def preprocess_for_query_intent_classification(base_frame: pd.DataFrame,
+                                               basic_features: List[str],
+                                               artisanal_features: List[str],
+                                               embeddings_features: List[str]
+                                               ) -> pd.DataFrame:
+
+    features_frame = base_frame.copy()
+
+    # Create embeddings for each feature in embeddings_features
+    features_frame = pd.concat([features_frame,
+                                compute_embeddings_frame(features_frame, embeddings_features)], axis=1)
+
+    # Create embeddings_columns with the new columns created with embeddings
+    embeddings_columns = [f'{feature}_embedding' for feature in embeddings_features]
+
+    word_pattern = re.compile(r'\W')
+    for feature in artisanal_features:
+        features_frame = (
+            features_frame
+            .assign(word_level_feature=
+                    lambda f: f[feature].apply(lambda q: extract_artisanal_text_features(q, word_pattern)))
+            .assign(char_level_feature=lambda f: f[feature].apply(extract_artisanal_text_features))
+            .rename(columns={c: f'{feature}_{c}' for c in ['word_level_feature', 'char_level_feature']})
+        )
+        # Extend embeddings columns with artisanal features
+        embeddings_columns.extend([f'{feature}_{c}' for c in ['word_level_feature', 'char_level_feature']])
+
+    return create_feature_matrix(features_frame, basic_features, embeddings_columns=embeddings_columns)
