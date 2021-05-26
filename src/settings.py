@@ -7,6 +7,9 @@ DATA_PATH = os.path.join(os.pardir, 'data')
 STOPWORDS_PATH = Path(SRC_PATH).parent.joinpath('resources', 'stopwords.txt')
 WORDS_EMBEDDINGS_MODEL_SOURCE = 'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.pt.300.bin.gz'
 
+# Word2Vec Embeddings
+EMBEDDINGS_MODEL = 'cc.pt.300.bin'
+
 # Model Tracking
 MODELS_PATH = Path(SRC_PATH).parent.joinpath('models')
 TRACKING_URI = str(Path(SRC_PATH).parent.joinpath('notebooks', 'mlruns'))
