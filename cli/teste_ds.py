@@ -9,6 +9,7 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, os.pardir)))
 
 from src.entities import Product
 from src.pipeline.inference_pipeline import make_batch_predictions, make_supervised_intent_classification
+from src.pipeline.recommendation import make_recommendations_for_query
 
 
 def classify_product(product: str) -> None:
@@ -24,6 +25,9 @@ def classify_query(query: str) -> None:
 
 def recommend(query: str) -> None:
     print(f'TBD: Recommend for Query: {query}')
+    recommended_products = make_recommendations_for_query(query)
+    for product in recommended_products:
+        print(f' - Product ID: {product.product_id} | Title: {product.title}')
 
 
 def main():
