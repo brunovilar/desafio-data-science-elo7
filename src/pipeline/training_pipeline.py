@@ -80,7 +80,9 @@ def compute_stats_for_numeric_values(base_frame: pd.DataFrame, columns: List[str
             [columns]
             .agg({np.median,
                   np.mean,
-                  np.std
+                  np.std,
+                  np.min,
+                  np.max
                   })
             .to_dict()
             )
