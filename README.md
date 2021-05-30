@@ -52,7 +52,7 @@ cd teste_HT
 jupyter lab
 ```
 
-## Visualizar Histórico de Experimentos na Interface do MLflow
+## Visualização Histórico de Experimentos na Interface do MLflow
 
 Ativar o *virtual environment* do projeto:
 
