@@ -182,10 +182,14 @@ def preprocess_features(base_frame: pd.DataFrame,
     return features_frame
 
 
-def count_frame_items(base_frame: pd.DataFrame, group_column: str, count_column: str) -> pd.Series:
-    return (base_frame
-            [[group_column, count_column]]
-            .drop_duplicates()
+def count_frame_items(base_frame: pd.DataFrame, group_column: str, count_column: str, drop_duplicates=True) -> pd.Series:
+
+    frame_view = base_frame[[group_column, count_column]]
+
+    if drop_duplicates:
+        frame_view = frame_view.drop_duplicates()
+
+    return (frame_view
             .assign(records=1)
             .groupby(group_column)
             .sum()
