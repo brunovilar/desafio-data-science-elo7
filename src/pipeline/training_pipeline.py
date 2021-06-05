@@ -146,7 +146,6 @@ def create_preprocessing_resources(base_frame: pd.DataFrame,
 
 
 def preprocess_features(base_frame: pd.DataFrame,
-                        categories: List[str],
                         category_embeddings: Dict,
                         numeric_stats: Dict,
                         numeric_features: List[str],
@@ -178,6 +177,10 @@ def preprocess_features(base_frame: pd.DataFrame,
 
     # Fills missing values
     features_frame = fill_missing_numeric_values(features_frame, numeric_stats)
+
+    # Standardize numeric values
+    for column in numeric_features:
+        features_frame[column] = (features_frame[column] - numeric_stats[column]['mean']) / numeric_stats[column]['std']
 
     return features_frame
 

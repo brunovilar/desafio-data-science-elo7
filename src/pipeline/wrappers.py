@@ -39,7 +39,6 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
         _model_input = model_input.copy()
 
         features = self.preprocess_fn(_model_input,
-                                      self.categories,
                                       self.category_embeddings,
                                       self.numeric_stats,
                                       self.numeric_columns_to_impute,
