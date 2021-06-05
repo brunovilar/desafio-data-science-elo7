@@ -15,6 +15,7 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
                  numeric_columns_to_impute,
                  text_columns_to_encode,
                  similarity_features,
+                 columns_to_combine,
                  categories,
                  category_embeddings,
                  numeric_stats,
@@ -28,6 +29,7 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
         self.numeric_columns_to_impute = numeric_columns_to_impute
         self.text_columns_to_encode = text_columns_to_encode
         self.similarity_features = similarity_features
+        self.columns_to_combine = columns_to_combine
         self.categories = categories
         self.category_embeddings = category_embeddings
         self.numeric_stats = numeric_stats
@@ -44,6 +46,7 @@ class PreprocessingWrapper(mlflow.pyfunc.PythonModel):
                                       self.numeric_columns_to_impute,
                                       self.text_columns_to_encode,
                                       self.similarity_features,
+                                      self.columns_to_combine,
                                       self.partial_clean_fn)
 
         return self.matrix_creation_fn(features, self.basic_features, self.embeddings_features)
