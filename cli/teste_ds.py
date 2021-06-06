@@ -1,11 +1,10 @@
-import os
 import sys
 import json
 import argparse
 import funcy as fp
+from pathlib import Path
 
-SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
-sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, os.pardir)))
+sys.path.append(str(Path.cwd()))
 
 from src.entities import Product
 from src.pipeline.inference_pipeline import make_batch_predictions, make_supervised_intent_classification
@@ -31,9 +30,6 @@ def recommend(query: str) -> None:
 
 
 def main():
-    print(__file__)
-    print(os.path.expanduser(__file__))
-    print(SCRIPT_DIR)
 
     task_function_map = {
         "classify": classify_product,

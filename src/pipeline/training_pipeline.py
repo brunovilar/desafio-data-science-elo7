@@ -145,19 +145,33 @@ def create_preprocessing_resources(base_frame: pd.DataFrame,
     return categories, category_embeddings_dict, numerics_stats_dict
 
 
+def combine_columns(base_frame: pd.DataFrame, columns: List[Tuple[str, str]], sep: str=None) -> pd.DataFrame():
+    """Combines two columns into a new one"""
+    sep = sep or ''
+
+    for column_a, column_b in columns:
+        base_frame = (base_frame
+                      .assign(**{f'{column_a}_and_{column_b}': lambda f: f[column_a] + sep + f[column_b]})
+                     )
+    return base_frame
+
+
 def preprocess_features(base_frame: pd.DataFrame,
-                        categories: List[str],
                         category_embeddings: Dict,
                         numeric_stats: Dict,
                         numeric_features: List[str],
                         text_features: List[str],
                         similarity_features: List[str],
+                        columns_to_combine: List[Tuple[str, str]],
                         text_preprocessing_fn: partial
                         ) -> pd.DataFrame:
     """Preprocesses features for training, validation and test"""
+    combination_columns = [f'{c_a}_and_{c_b}' for c_a, c_b in columns_to_combine]
+    text_features = text_features + combination_columns
 
     columns_to_copy = ['category'] + numeric_features + text_features
     features_frame = (base_frame
+                      .pipe(combine_columns, columns_to_combine)
                       [columns_to_copy]
                       .copy()
                       .fillna({c: '' for c in text_features})
@@ -178,6 +192,10 @@ def preprocess_features(base_frame: pd.DataFrame,
 
     # Fills missing values
     features_frame = fill_missing_numeric_values(features_frame, numeric_stats)
+
+    # Standardize numeric values
+    for column in numeric_features:
+        features_frame[column] = (features_frame[column] - numeric_stats[column]['mean']) / numeric_stats[column]['std']
 
     return features_frame
 
