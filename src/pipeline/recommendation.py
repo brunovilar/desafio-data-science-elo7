@@ -64,7 +64,7 @@ def compute_embedding_columns_similarity(base_embeddings_frame: pd.DataFrame,
 
 def recommend_products(base_frame: pd.DataFrame, query: str, items_to_retrieve: int = 10) -> pd.DataFrame:
 
-    ft_model = fasttext.load_model(str(Path.joinpath(settings.MODELS_PATH, settings.EMBEDDINGS_MODEL)))
+    ft_model = fasttext.load_model(str(Path(settings.MODELS_PATH).joinpath(settings.EMBEDDINGS_MODEL)))
     query_embedding = ft_model.get_sentence_vector(query)
 
     search_frame = base_frame.copy()
@@ -93,7 +93,7 @@ def recommend_products(base_frame: pd.DataFrame, query: str, items_to_retrieve: 
 
 def make_recommendations_for_query(query: str) -> List[Product]:
     # Identify query intent
-    query_product = Product(title=query, price=None, concatenated_tags=None)
+    query_product = Product(title=query, price=None, concatenated_tags=query)
     query_intent = fp.first(make_supervised_intent_classification([query]))
 
     # Compute the probability of the query being of each category
