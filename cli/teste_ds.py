@@ -3,6 +3,8 @@ import json
 import argparse
 import funcy as fp
 from pathlib import Path
+from pydantic import validate_arguments, ValidationError, Field, Json
+from pydantic.typing import Annotated
 
 sys.path.append(str(Path.cwd()))
 
@@ -11,19 +13,21 @@ from src.pipeline.inference_pipeline import make_batch_predictions, make_supervi
 from src.pipeline.recommendation import make_recommendations_for_query
 
 
-def classify_product(product: str) -> None:
-    product_obj = Product(**json.loads(product))
+@validate_arguments()
+def classify_product(product: Annotated[Json, {"format": "json-string"}]) -> None:
+    product_obj = Product(**product)
     product_obj = fp.first(make_batch_predictions([product_obj]))
     print(product_obj.category)
 
 
+@validate_arguments()
 def classify_query(query: str) -> None:
     query_intent = fp.first(make_supervised_intent_classification([query]))
     print(query_intent)
 
 
+@validate_arguments()
 def recommend(query: str) -> None:
-    print(f'TBD: Recommend for Query: {query}')
     recommended_products = make_recommendations_for_query(query)
     for product in recommended_products:
         print(f' - Product ID: {product.product_id} | Title: {product.title}')
@@ -51,7 +55,15 @@ def main():
     task_fn = task_function_map.get(task)
 
     if task_fn:
-        task_fn(parameter)
+        try:
+            task_fn(parameter)
+
+        except ValidationError as e:
+            validation_issues = ' '.join([
+                f'{error["loc"][0]}: {error["msg"]}'
+                for error in e.errors()
+            ])
+            print(f'Problemas encontrados nos dados de entrada: {validation_issues}')
     else:
         sys.exit(1)
 
