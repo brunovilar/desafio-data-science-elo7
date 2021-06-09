@@ -1,5 +1,6 @@
 from pydantic import validator
 from pydantic.dataclasses import dataclass
+from dataclasses_json import dataclass_json
 from datetime import date
 
 CATEGORIES = ['Bebê', 'Bijuterias e Jóias', 'Decoração', 'Lembrancinhas', 'Outros', 'Papel e Cia']
@@ -13,6 +14,7 @@ class PydanticConfig:
     }
 
 
+@dataclass_json
 @dataclass(init=True, repr=True, eq=True, order=True, unsafe_hash=False, frozen=False, config=PydanticConfig)
 class Product(object):
     title: str = None
