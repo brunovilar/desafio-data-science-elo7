@@ -2,8 +2,9 @@ from pathlib import Path
 
 SRC_PATH = str(Path.cwd().joinpath(Path(__file__).parent.expanduser()))
 
-RAW_DATASET_PATH = 'https://elo7-datasets.s3.amazonaws.com/data_scientist_position/elo7_recruitment_dataset.csv'
 DATA_PATH = str(Path(SRC_PATH).parent.joinpath('data'))
+APPLICATION_LOG_PATH = str(Path(DATA_PATH).joinpath('application_log'))
+RAW_DATASET_PATH = 'https://elo7-datasets.s3.amazonaws.com/data_scientist_position/elo7_recruitment_dataset.csv'
 STOPWORDS_PATH = Path(SRC_PATH).parent.joinpath('resources', 'stopwords.txt')
 WORDS_EMBEDDINGS_MODEL_SOURCE = 'https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.pt.300.bin.gz'
 

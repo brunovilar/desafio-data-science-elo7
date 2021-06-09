@@ -7,29 +7,42 @@ from pydantic import validate_arguments, ValidationError, Field, Json
 from pydantic.typing import Annotated
 
 sys.path.append(str(Path.cwd()))
-
+from src.logging import LoggerFactory
 from src.entities import Product
 from src.pipeline.inference_pipeline import make_batch_predictions, make_supervised_intent_classification
 from src.pipeline.recommendation import make_recommendations_for_query
 
+logger = LoggerFactory.get_logger(__name__)
+
 
 @validate_arguments()
 def classify_product(product: Annotated[Json, {"format": "json-string"}]) -> None:
+    logger.info(f'Classify Product', extra={'props': {'category':'action_call',
+                                                      'input': product}})
     product_obj = Product(**product)
     product_obj = fp.first(make_batch_predictions([product_obj]))
     print(product_obj.category)
+    logger.info(f'Classified Product', extra={'props': {'category':'action_result',
+                                                        'input_product': product,
+                                                        'output_product': product_obj.to_dict()}})
 
 
 @validate_arguments()
 def classify_query(query: str) -> None:
+    logger.info(f'Classify Query', extra={'props': {'category':'action_call',
+                                                    'input': query}})
     query_intent = fp.first(make_supervised_intent_classification([query]))
     print(query_intent)
+    logger.info(f'Classified Query', extra={'props': {'category':'action_result',
+                                                      'input': query,
+                                                      'query_intent': query_intent}})
 
 
 @validate_arguments()
 def recommend(query: str) -> None:
-    recommended_products = make_recommendations_for_query(query)
-    for product in recommended_products:
+    logger.info(f'Recommend for Query', extra={'props': {'category':'action_call',
+                                                         'input': query}})
+    for product in make_recommendations_for_query(query):
         print(f' - Product ID: {product.product_id} | Title: {product.title}')
 
 
@@ -63,7 +76,10 @@ def main():
                 f'{error["loc"][0]}: {error["msg"]}'
                 for error in e.errors()
             ])
+            logger.exception('Input Validation Exception')
             print(f'Problemas encontrados nos dados de entrada: {validation_issues}')
+        except:
+            logger.exception('Unexpected Exception')
     else:
         sys.exit(1)
 

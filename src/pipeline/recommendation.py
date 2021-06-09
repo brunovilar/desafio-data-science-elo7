@@ -8,9 +8,14 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
 from .. import settings
+from ..logging import LoggerFactory
 from ..entities import Product
 from ..pipeline.training_pipeline import compute_embeddings_frame
 from ..pipeline.inference_pipeline import load_model_resources, make_supervised_intent_classification
+
+logger = LoggerFactory.get_logger(__name__)
+
+CATEGORY_PROBABILITY_THRESHOLD = .25
 
 
 class RecommendationWeights(Enum):
@@ -24,9 +29,6 @@ class RecommendationWeights(Enum):
 class QueryIntent(Enum):
     FOCUS = 'Foco'
     EXPLORATION = 'Exploração'
-
-
-CATEGORY_PROBABILITY_THRESHOLD = .25
 
 
 def generate_product_recommendation_dataset() -> pd.DataFrame():
@@ -44,6 +46,8 @@ def generate_product_recommendation_dataset() -> pd.DataFrame():
     embeddings_columns = ['title', 'concatenated_tags']
     base_frame = pd.concat([base_frame, compute_embeddings_frame(base_frame, embeddings_columns)], axis=1)
     base_frame.reset_index(drop=True).to_feather(str(dataset_file_path))
+
+    logger.info('Product Recommendation Dataset was generated.', extra={'props': {'dataset_length': len(base_frame)}})
 
 
 def compute_embedding_columns_similarity(base_embeddings_frame: pd.DataFrame,
@@ -131,5 +135,18 @@ def make_recommendations_for_query(query: str) -> List[Product]:
     recommendations_frame = recommend_products(base_frame, query)
 
     # Format and return output
-    return [Product(**item)
-            for item in recommendations_frame[['product_id', 'title']].to_dict(orient='records')]
+    for item in recommendations_frame[['product_id', 'title']].to_dict(orient='records'):
+        yield Product(**item)
+
+    # Log recommendation details
+    log_object = {
+        'category': 'action_result',
+        'query': query,
+        'query_intent': query_intent,
+        'selected_categories': list(selected_categories),
+        'categories_probs': {category: prob
+                             for prob, category in zip(predictions[0], categories)},
+        'dataset_length': len(recommendations_frame),
+        'recommendations': recommendations_frame[['product_id', 'title', 'score']].to_dict(orient='records')
+    }
+    logger.info('Recommendations for Query', extra={'props': log_object})

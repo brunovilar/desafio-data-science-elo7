@@ -5,10 +5,11 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 import mlflow
+
 from mlflow.pyfunc import PyFuncModel
 from mlflow.tracking import MlflowClient
-
 from sklearn.preprocessing import LabelEncoder
+from ..logging import LoggerFactory
 from ..entities import Product
 from .. import settings
 from ..pipeline.training_pipeline import (compute_embeddings_frame,
@@ -16,6 +17,7 @@ from ..pipeline.training_pipeline import (compute_embeddings_frame,
                                           get_qualified_queries,
                                           compute_frame_column_entropy)
 
+logger = LoggerFactory.get_logger(__name__)
 
 @lru_cache(maxsize=10)
 def load_model_resources(run_id: str) -> Tuple[PyFuncModel, Any, LabelEncoder]:
