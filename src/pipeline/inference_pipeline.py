@@ -1,4 +1,5 @@
 import os
+import time
 from typing import List, Tuple, Any
 from functools import lru_cache
 
@@ -47,6 +48,8 @@ def load_model_resources(run_id: str) -> Tuple[PyFuncModel, Any, LabelEncoder]:
 
 
 def make_batch_predictions(products: List[Product]) -> List[Product]:
+    # Start logging time
+    start_time = time.time()
 
     # Retrieve the model's reference resources from Mlflow
     preprocessing, model, label_encoder = load_model_resources(settings.CATEGORY_CLASSIFICATION_RUN_ID)
@@ -58,6 +61,19 @@ def make_batch_predictions(products: List[Product]) -> List[Product]:
     predictions = model.predict(features)
     # Assign the prediction as categories
     products_frame['category'] = label_encoder.inverse_transform(predictions)
+
+    # Log classification details
+    log_object = {
+        'action': 'classify_product_category',
+        'type': 'model_usage',
+        'model_id': settings.CATEGORY_CLASSIFICATION_RUN_ID,
+        'input': [p.to_dict() for p in products],
+        'input_length': len(products),
+        'output': products_frame.to_dict(orient='records'),
+        'total_time': time.time() - start_time
+    }
+    logger.info('Classified Products Categories', extra={'props': log_object})
+
     # Cast products from DataFrame records to dicts and then dataclass again
     return [Product(**item)
             for item in products_frame.to_dict(orient='records')]
@@ -111,8 +127,10 @@ def make_unsupervised_intent_classification(base_frame: pd.DataFrame,
             .apply(lambda e: -1 if e < 0 else int(e <= entropy_threshold))
             )
 
-
 def make_supervised_intent_classification(queries: List[str]) -> List[str]:
+    # Start logging time
+    start_time = time.time()
+
     # Retrieve the model's reference resources from Mlflow
     preprocessing, model, label_encoder = load_model_resources(settings.SUPERVISED_INTENT_CLASSIFICATION_RUN_ID)
     # Load products as a data frame for batch prediction
@@ -121,6 +139,18 @@ def make_supervised_intent_classification(queries: List[str]) -> List[str]:
     features = preprocessing.predict(queries_frame)
     # Make predictions
     predictions = model.predict(features)
+
+    # Log classification details
+    log_object = {
+        'action': 'classify_query_intent',
+        'type': 'model_usage',
+        'model_id': settings.SUPERVISED_INTENT_CLASSIFICATION_RUN_ID,
+        'input': queries,
+        'input_length': len(queries),
+        'output': queries_frame.assign(intent=predictions).to_dict(orient='records'),
+        'total_time': time.time() - start_time
+    }
+    logger.info('Classified Queries Intents', extra={'props': log_object})
 
     # Return the intent of each query as a list of strings
     return label_encoder.inverse_transform(predictions)

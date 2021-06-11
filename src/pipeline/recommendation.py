@@ -1,3 +1,4 @@
+import time
 from enum import Enum
 from pathlib import Path
 from typing import List
@@ -96,6 +97,10 @@ def recommend_products(base_frame: pd.DataFrame, query: str, items_to_retrieve: 
 
 
 def make_recommendations_for_query(query: str) -> List[Product]:
+
+    # Start logging time
+    start_time = time.time()
+
     # Identify query intent
     query_product = Product(title=query, price=None, concatenated_tags=query)
     query_intent = fp.first(make_supervised_intent_classification([query]))
@@ -121,32 +126,42 @@ def make_recommendations_for_query(query: str) -> List[Product]:
 
     # Load products dataset
     dataset_file_path = Path(settings.DATA_PATH).joinpath('processed', 'product_recommendation.feather')
-    if not dataset_file_path.exists():
+    if not dataset_file_path.exists():        
         generate_product_recommendation_dataset()
     base_frame = pd.read_feather(str(dataset_file_path))
+    original_dataset_len = len(base_frame)
 
     # Preprocess dataset
     base_frame = (base_frame
                   .loc[lambda f: f['category'].isin(selected_categories)]
                   .assign(category_prob=lambda f: f['category'].map(category_prob_dict))
                   )
+    category_filtered_dataset_len = len(base_frame)
 
     # Make recommendations
-    recommendations_frame = recommend_products(base_frame, query)
+    recommendations_frame = recommend_products(base_frame, query)    
 
     # Format and return output
     for item in recommendations_frame[['product_id', 'title']].to_dict(orient='records'):
         yield Product(**item)
 
     # Log recommendation details
+    columns_to_log = ['product_id', 'title', 'score', 'title_similarity', 'concatenated_tags_similarity', 
+                      'category_prob', 'orders_per_views']
     log_object = {
-        'category': 'action_result',
+        'action': 'recommend_products_for_query',
+        'type': 'model_usage',
+        'product_category_model_id': settings.CATEGORY_CLASSIFICATION_RUN_ID,
+        'query_intent_model_id': settings.SUPERVISED_INTENT_CLASSIFICATION_RUN_ID,        
         'query': query,
         'query_intent': query_intent,
         'selected_categories': list(selected_categories),
         'categories_probs': {category: prob
                              for prob, category in zip(predictions[0], categories)},
-        'dataset_length': len(recommendations_frame),
-        'recommendations': recommendations_frame[['product_id', 'title', 'score']].to_dict(orient='records')
+        'products_dataset_length': original_dataset_len,
+        'category_filtered_products_dataset_length': category_filtered_dataset_len,
+        'recommendations_length': len(recommendations_frame),
+        'recommendations': recommendations_frame[columns_to_log].to_dict(orient='records'),
+        'total_time': time.time() - start_time
     }
-    logger.info('Recommendations for Query', extra={'props': log_object})
+    logger.info('Recommend for Query', extra={'props': log_object})
