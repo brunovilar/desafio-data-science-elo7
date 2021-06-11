@@ -15,6 +15,7 @@ O conteúdo dos *notebooks* é descrito a seguir.
      - [04.3_Classificação de Intenções](04.3_Classificacao_de_Intencoes.ipynb): cria a base para se fazer experimentações e criar modelos supervisionados para determinar a intenção de uma busca.
      - [04.4 Histórico e Análise de Experimentos de Classificação de Intenções de Busca](04.4_Historico_e_Analise_de_Experimentos.ipynb): recupera o histórico de experimentações e permite analisar os resultados do modelo criado em mais profundidade.
  - [05 Análise de Interação de Serviços](05.0_Analise_de_Integracao_de_Servicos.ipynb): realiza o estudo de como combinar os modelos criados nos passos anteriores para criar um recomendador de produtos a partir de buscas.
- - [06 Consumo de Produtização](06_Consumo_Produtizacao.ipynb): mantém um histórico de como utilizar a Command Line Interface para utilizar os serviços criados, com uma linha de atuação que se assemelha a testes automatizados.
+ - [06.0 Consumo de Produtização](06.0_Consumo_Produtizacao.ipynb): mantém um histórico de como utilizar a Command Line Interface para utilizar os serviços criados, com uma linha de atuação que se assemelha a testes automatizados.
+     - [06.1 Consumo de Produtização](06.1_Log_da_Aplicacao.ipynb): restaura informações do *log* de utilização dos modelos e analisa as informações básicas do modelo de recomendação.
 
 Cabe ressaltar que todos os *notebooks* utilizam classes e funções implementadas e disponíveis no [diretório de códigos](../src).
