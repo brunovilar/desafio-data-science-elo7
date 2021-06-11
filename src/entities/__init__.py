@@ -9,8 +9,8 @@ CATEGORIES = ['Bebê', 'Bijuterias e Jóias', 'Decoração', 'Lembrancinhas', 'O
 class PydanticConfig:
     validate_assignment = True
     error_msg_templates = {
-        'type_error.float': 'Tipo incorreto de dados. Deveria ser número.',
-        'type_error.int': 'Tipo incorreto de dados. Deveria ser número (inteiro).'
+        'type_error.float': 'Wrong data type. It should be a number.',
+        'type_error.int': 'Wrong data type. It should be a number (integer).'
     }
 
 
@@ -29,27 +29,27 @@ class Product(object):
 
     @validator('title')
     def required_field(cls, v):
-        assert v is not None, 'O campo é obrigatório.'
+        assert v is not None, 'The field is required.'
         return v
 
     @validator('title')
     def non_empty_sentence(cls, v):
-        assert v is None or len(v.strip()) > 0, 'Um conteúdo deve ser definido.'
+        assert v is None or len(v.strip()) > 0, 'A content should be defined.'
         return v
 
     @validator('weight', 'price', 'product_id', 'minimum_quantity')
     def positive_value(cls, v):
-        assert v is None or v >= 0, 'O valor de deve ser um número positivo.'
+        assert v is None or v >= 0, 'The value should be a positive number.'
         return v
 
     @validator('minimum_quantity', 'product_id')
     def integer_value(cls, v):
         assert (v is None
                 or isinstance(v, int)
-                or (isinstance(v, str) and v.isdecimal())), f'O valor deve ser um número inteiro.'
+                or (isinstance(v, str) and v.isdecimal())), f'The value should be an integer number.'
         return v
 
     @validator('category')
     def category_values(cls, v):
-        assert v is None or v in CATEGORIES, 'Categoria não identificada.'
+        assert v is None or v in CATEGORIES, 'The category could not be identified.'
         return v
