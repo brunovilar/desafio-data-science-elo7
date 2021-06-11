@@ -7,14 +7,23 @@ from pydantic import validate_arguments, ValidationError, Field, Json
 from pydantic.typing import Annotated
 
 sys.path.append(str(Path.cwd()))
-
+from src.logging import LoggerFactory
 from src.entities import Product
 from src.pipeline.inference_pipeline import make_batch_predictions, make_supervised_intent_classification
 from src.pipeline.recommendation import make_recommendations_for_query
 
+logger = LoggerFactory.get_logger(__name__)
+
 
 @validate_arguments()
-def classify_product(product: Annotated[Json, {"format": "json-string"}]) -> None:
+def classify_product(product: Annotated[Json, str]) -> None:
+
+    logger.info('Classify Product', extra={'props': {
+                'action': 'classify_product_category',
+                'log_type': 'application_usage',
+                'input': product,
+                'input_length': 1}})
+
     product_obj = Product(**product)
     product_obj = fp.first(make_batch_predictions([product_obj]))
     print(product_obj.category)
@@ -22,14 +31,26 @@ def classify_product(product: Annotated[Json, {"format": "json-string"}]) -> Non
 
 @validate_arguments()
 def classify_query(query: str) -> None:
+
+    logger.info('Classify Query', extra={'props': {
+                'action': 'classify_query_intent',
+                'log_type': 'application_usage',
+                'input': query,
+                'input_length': 1}})
+
     query_intent = fp.first(make_supervised_intent_classification([query]))
     print(query_intent)
 
 
 @validate_arguments()
 def recommend(query: str) -> None:
-    recommended_products = make_recommendations_for_query(query)
-    for product in recommended_products:
+    logger.info('Recommend for Query', extra={'props': {
+                'action': 'recommend_products_for_query',
+                'log_type': 'application_usage',
+                'input': query,
+                'input_length': 1}})
+
+    for product in make_recommendations_for_query(query):
         print(f' - Product ID: {product.product_id} | Title: {product.title}')
 
 
@@ -63,7 +84,10 @@ def main():
                 f'{error["loc"][0]}: {error["msg"]}'
                 for error in e.errors()
             ])
-            print(f'Problemas encontrados nos dados de entrada: {validation_issues}')
+            logger.exception('Input Validation Exception')
+            print(f'Problems found on input data: {validation_issues}')
+        except:
+            logger.exception('Unexpected Exception')
     else:
         sys.exit(1)
 
