@@ -3,7 +3,7 @@ from math import log, e
 import numpy as np
 import pandas as pd
 from sklearn import metrics
-from collections import Iterable
+from collections.abc import Iterable
 from typing import List, Dict, Set, Any, Tuple
 
 
