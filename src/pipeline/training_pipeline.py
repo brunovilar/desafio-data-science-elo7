@@ -84,6 +84,7 @@ def compute_stats_for_numeric_values(base_frame: pd.DataFrame, columns: List[str
                   np.min,
                   np.max
                   })
+            .rename(index={'amin': 'min', 'amax': 'max'})         
             .to_dict()
             )
 
